@@ -1,0 +1,1046 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SugarRush API",
+    "description": "The SugarRush API enables candy distributors to manage inventory, store accounts, and deliveries efficiently. It provides endpoints for accessing candy data, managing store profiles and orders, and tracking deliveries. The API also includes user authentication via Google OAuth.",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Handles user authentication via Google OAuth"
+    },
+    {
+      "name": "users",
+      "description": "Manages user accounts and roles"
+    },
+    {
+      "name": "candy",
+      "description": "Manages candy inventory, pricing, and stock levels"
+    },
+    {
+      "name": "stores",
+      "description": "Allows store owners to register, update, and manage store profiles"
+    },
+    {
+      "name": "orders",
+      "description": "Processes store orders and tracks delivery status"
+    }
+  ],
+  "paths": {
+    "/auth/google": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "Authenticate using Google OAuth",
+        "description": "Redirects users to Google's OAuth login page.",
+        "security": [{ "OAuth2": ["openapi", "profile", "email"] }],
+        "operationId": "googleAuth",
+        "responses": {
+          "302": {
+            "description": "Redirects to Google for authentication"
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "Google OAuth callback",
+        "description": "Handles the Google OAuth callback, verifies the user, and returns a JWT token. If successful, either redirects the user or returns the token in the response.",
+        "operationId": "googleCallback",
+        "security": [{ "OAuth2": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful authentication, returns a JWT token and user information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Authentication successful" },
+                    "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "username": { "type": "string", "example": "john_doe" },
+                        "email": { "type": "string", "example": "john@example.com" },
+                        "role": { "type": "string", "example": "user" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "Redirect to client application or dashboard after successful authentication",
+            "headers": {
+              "Location": {
+                "description": "URL where the user is redirected after successful login",
+                "schema": { "type": "string", "example": "https://yourfrontend.com/dashboard" }
+              }
+            }
+          },
+          "400": { "description": "Authentication failed" },
+          "401": { "description": "Unauthorized - Invalid credentials or token expired" },
+          "500": { "description": "Internal server error during authentication" }
+        },
+        "x-internal": true
+      }
+    },
+    "/users/logout": {
+      "post": {
+        "tags": ["users"],
+        "summary": "Log out the user",
+        "description": "Logs the user out of Google, invalidates the current access token, and blacklists the JWT via Redis.\n**Important:** After logout, click \"Authorize\" → \"Logout\" to clear Swagger's stored token.",
+        "operationId": "userLogout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Successfully logged out" },
+          "400": { "description": "No token provided or invalid token" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Retrieve all users",
+        "description": "Fetch all registered users. Admins can see all users; other users can only see themselves.",
+        "operationId": "getAllUsers",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "description": "Filter users by role (admin, storeowner, driver, inventoryManager, temporary)",
+            "schema": {
+              "type": "string",
+              "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+            },
+            "example": "temporary"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Filter users by username",
+            "schema": {
+              "type": "string"
+            },
+            "example": "David Hillcrest"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Failed to get users" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "No users found in the database" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Retrieve a specific user",
+        "description": "Fetch details of a specific user by ID. Admins can access all users; other users can only access their own account.",
+        "operationId": "getSingleUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the user",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved user details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "User not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "put": {
+        "tags": ["users"],
+        "summary": "Update user information",
+        "description": "Update user information by ID. Users can update their own `preferred_name` and `phone_number`. Admins can update `roles` and review temporary accounts.",
+        "operationId": "updateSingleUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the user",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "preferred_name": { "type": "string" },
+                  "phone_number": { 
+                    "type": "string", 
+                    "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
+                    "example": "+1-690-445-2710"
+                  },
+                  "role": { 
+                    "type": "string", 
+                    "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "User updated successfully" },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid input data" },
+          "401": { "description": "Unauthorized access" },
+          "403": { "description": "Forbidden - Not allowed to modify this user" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "delete": {
+        "tags": ["users"],
+        "summary": "Delete a user account",
+        "description": "Deletes a user account by ID. Users can delete their own account; admins can delete any account.",
+        "operationId": "deleteSingleUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the user",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "User successfully deleted" },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "User not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/candy": {
+      "get": {
+        "tags": ["candy"],
+        "summary": "Retrieve all candy items",
+        "description": "Fetch all available candy items. Optional query parameters can be used to filter results.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Filter candy by name",
+            "schema": {
+              "type": "string"
+            },
+            "example": "snickers"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "description": "Filter candy by description",
+            "schema": {
+              "type": "string"
+            },
+            "example": "chocolate"
+          },
+          {
+            "name": "container",
+            "in": "query",
+            "description": "Filter candy by shipping container type",
+            "schema": {
+              "type": "string",
+              "enum": ["pallet", "crate", "cardboardBox", "displayBox"]
+            },
+            "example": "displayBox"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved candy items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Candy"
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "post": {
+        "tags": ["candy"],
+        "summary": "Add a new candy item",
+        "description": "Creates a new candy item in the inventory.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Candy"
+        },
+        "responses": {
+          "201": { "description": "Candy item successfully created" },
+          "400": { "description": "Invalid request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/candy/{id}": {
+      "get": {
+        "tags": ["candy"],
+        "summary": "Retrieve a single candy item",
+        "description": "Fetch details of a specific candy item by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the candy item",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved candy item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candy"
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Candy item not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "put": {
+        "tags": ["candy"],
+        "summary": "Update a candy item",
+        "description": "Update an existing candy item's details by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the candy item",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Candy"
+        },
+        "responses": {
+          "200": { "description": "Candy item successfully updated" },
+          "400": { "description": "Invalid ID format or request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Candy item not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "delete": {
+        "tags": ["candy"],
+        "summary": "Delete a candy item",
+        "description": "Remove a candy item from the inventory by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the candy item",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Candy item successfully deleted" },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Candy item not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/stores": {
+      "get": {
+        "tags": ["stores"],
+        "summary": "Retrieve all stores",
+        "description": "Fetch all available stores. Optional query parameters can be used to filter results.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Filter stores by name",
+            "schema": {
+              "type": "string"
+            },
+            "example": "walgreens"
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "description": "Filter stores by owner_id",
+            "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+            },
+            "example": "676fc7533d1439022be2c2d8"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved stores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Store"
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "post": {
+        "tags": ["stores"],
+        "summary": "Create a new store",
+        "description": "Creates a new store and adds it to the database.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Store"
+        },
+        "responses": {
+          "201": { "description": "Store successfully created" },
+          "400": { "description": "Invalid request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/stores/{id}": {
+      "get": {
+        "tags": ["stores"],
+        "summary": "Retrieve a specific store",
+        "description": "Fetch details of a specific store by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the store",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved store details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Store not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "put": {
+        "tags": ["stores"],
+        "summary": "Update a store",
+        "description": "Update store details by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the store",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Store"
+        },
+        "responses": {
+          "200": { "description": "Store successfully updated" },
+          "400": { "description": "Invalid ID format or request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Store not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "delete": {
+        "tags": ["stores"],
+        "summary": "Delete a store",
+        "description": "Remove a store from the database by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the store",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Store successfully deleted" },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Store not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": ["orders"],
+        "summary": "Retrieve all orders",
+        "description": "Fetch all available orders. Optional query parameters can be used to filter results.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter orders by delivery status (pending, shipped, delivered)",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "shipped", "delivered"]
+            },
+            "example": "pending"
+          },
+          {
+            "name": "driver",
+            "in": "query",
+            "description": "Filter orders by deliverer_id",
+            "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+            },
+            "example": "679fc7533d1717094be2c5e6"
+          },
+          {
+            "name": "candy",
+            "in": "query",
+            "description": "Filter orders containing a specific candy_id",
+            "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+            },
+            "example": "679ff3933d1717094be2c645"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "post": {
+        "tags": ["orders"],
+        "summary": "Create a new order",
+        "description": "Creates a new order and adds it to the database.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Order"
+        },
+        "responses": {
+          "201": { "description": "Order successfully created" },
+          "400": { "description": "Invalid request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["orders"],
+        "summary": "Retrieve a specific order",
+        "description": "Fetch details of a specific order by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the order",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved order details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "put": {
+        "tags": ["orders"],
+        "summary": "Update an order",
+        "description": "Update an order by its ID. The `last_updated` field will be automatically updated with the current date and time.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the order",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Order"
+        },
+        "responses": {
+          "200": { "description": "Order successfully updated" },
+          "400": { "description": "Invalid ID format or request data" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      },
+      "delete": {
+        "tags": ["orders"],
+        "summary": "Delete an order",
+        "description": "Remove an order from the database by its ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the order",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Order successfully deleted" },
+          "400": { "description": "Invalid ID format" },
+          "401": { "description": "Unauthorized - User is not authenticated" },
+          "403": { "description": "Forbidden - User does not have access" },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "OAuth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication with Google",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://accounts.google.com/o/oauth2/auth",
+            "tokenUrl": "https://oauth2.googleapis.com/token",
+            "scopes": {
+              "openid": "Authenticate user and retrieve ID token",
+              "profile": "Access user profile",
+              "email": "Access user email"
+            }
+          }
+        }
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT authorization using Bearer token"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "description": "MongoDB ObjectId" },
+          "google_id": { "type": "string" },
+          "username": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "preferred_name": { "type": "string" },
+          "phone_number": { 
+            "type": "string", 
+            "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
+            "example": "+1-690-445-2710"
+          },
+          "role": { 
+            "type": "string", 
+            "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+          },
+          "date_created": { 
+            "type": "string", 
+            "format": "date-time", 
+            "example": "2023-08-01T12:00:00Z"
+          }
+        }
+      },
+      "Candy": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "description": "MongoDB ObjectId" },
+          "name": { 
+            "type": "string", 
+            "description": "Name of the candy",
+            "example": "Snickers"
+          },
+          "description": { 
+            "type": "string", 
+            "description": "Brief description of the candy",
+            "example": "Milk chocolate, peanuts, caramel, and nougat."
+          },
+          "shipping_container": { 
+            "type": "string", 
+            "enum": ["pallet", "crate", "cardboardBox", "displayBox"],
+            "description": "The type of shipping container used for packaging",
+            "example": "pallet"
+          },
+          "price_per_unit": { 
+            "type": "number", 
+            "format": "float", 
+            "minimum": 0.01,
+            "description": "Price per individual unit of the candy",
+            "example": 1.5
+          },
+          "stock_quantity": { 
+            "type": "integer", 
+            "minimum": 0, 
+            "description": "Number of candy units available in stock",
+            "example": 1000
+          },
+          "supplier_name": { 
+            "type": "string", 
+            "description": "Name of the supplier or manufacturer",
+            "example": "Mars, Inc."
+          },
+          "date_added": { 
+            "type": "string", 
+            "format": "date", 
+            "description": "Date when the candy was added to inventory",
+            "example": "2023-01-01"
+          }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "_id": { 
+            "type": "string", 
+            "description": "MongoDB ObjectId of the store" 
+          },
+          "name": { 
+            "type": "string", 
+            "description": "The name of the store",
+            "example": "Candy Corner"
+          },
+          "street": { 
+            "type": "string", 
+            "description": "Street address of the store",
+            "example": "123 Sweet St"
+          },
+          "city": { 
+            "type": "string", 
+            "description": "City where the store is located",
+            "example": "Los Angeles"
+          },
+          "state": { 
+            "type": "string", 
+            "description": "State where the store is located (2-letter abbreviation)",
+            "example": "CA"
+          },
+          "zip_code": { 
+            "type": "string", 
+            "description": "ZIP code of the store location",
+            "pattern": "^\\d{5}(-\\d{4})?$",
+            "example": "90001"
+          },
+          "phone_number": { 
+            "type": "string", 
+            "description": "Contact phone number of the store",
+            "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
+            "example": "+1-323-555-1234"
+          },
+          "email": { 
+            "type": "string", 
+            "format": "email",
+            "description": "Store's contact email address",
+            "example": "info@candycorner.com"
+          },
+          "owner_id": { 
+            "type": "string", 
+            "description": "MongoDB ObjectId referencing the store owner",
+            "example": "67cb9b89b39c3bf08c3d592b"
+          },
+          "operating_hours": { 
+            "type": "string", 
+            "description": "Operating hours of the store",
+            "example": "10:00 AM - 6:00 PM"
+          },
+          "website": { 
+            "type": "string", 
+            "format": "uri",
+            "description": "Store's website URL",
+            "example": "http://www.candycorner.com"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "_id": { 
+            "type": "string", 
+            "description": "MongoDB ObjectId of the order" 
+          },
+          "store_id": { 
+            "type": "string", 
+            "description": "MongoDB ObjectId referencing the store that placed the order",
+            "example": "67cb80cab39c3bf08c3d590b"
+          },
+          "deliverer_id": { 
+            "type": "string", 
+            "description": "MongoDB ObjectId referencing the user (driver) delivering the order",
+            "example": "67cb9b89b39c3bf08c3d592c"
+          },
+          "candy_ordered": { 
+            "type": "array", 
+            "description": "List of candy items ordered and their quantities",
+            "items": {
+              "type": "object",
+              "properties": {
+                "candy_id": { 
+                  "type": "string", 
+                  "description": "MongoDB ObjectId referencing a candy item",
+                  "example": "67cb801eb39c3bf08c3d58dc"
+                },
+                "quantity": { 
+                  "type": "integer", 
+                  "minimum": 1,
+                  "description": "Quantity of the candy item ordered",
+                  "example": 30
+                }
+              }
+            }
+          },
+          "total_price": { 
+            "type": "number", 
+            "format": "float", 
+            "minimum": 0.01,
+            "description": "Total price of the order",
+            "example": 64.8
+          },
+          "date_created": { 
+            "type": "string", 
+            "format": "date-time", 
+            "description": "Timestamp when the order was created",
+            "example": "2024-03-01T12:00:00Z"
+          },
+          "last_updated": { 
+            "type": "string", 
+            "format": "date-time", 
+            "description": "Timestamp when the order was last updated",
+            "example": "2024-03-02T08:15:30Z"
+          },
+          "delivery_status": { 
+            "type": "string", 
+            "enum": ["pending", "shipped", "delivered"],
+            "description": "Current status of the order delivery",
+            "example": "pending"
+          },
+          "delivery_address": { 
+            "type": "string", 
+            "description": "Address where the order will be delivered",
+            "example": "123 Sweet St, Los Angeles, CA 90001"
+          },
+          "delivery_contact": { 
+            "type": "string", 
+            "description": "Name of the contact person for the delivery",
+            "example": "Maria Lopez"
+          },
+          "delivery_phone_number": { 
+            "type": "string", 
+            "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
+            "description": "Phone number of the delivery contact",
+            "example": "+1-323-555-1234"
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "Candy": {
+        "description": "Request body for creating a new candy item.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Candy"
+            }
+          }
+        }
+      },
+      "Store": {
+        "description": "Request body for creating a new store.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Store"
+            }
+          }
+        }
+      },
+      "Order": {
+        "description": "Request body for creating a new order.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Order"
+            }
+          }
+        }
+      },
+      "User": {
+        "description": "Request body for creating a new user.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
