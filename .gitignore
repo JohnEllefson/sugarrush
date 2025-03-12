@@ -7,3 +7,6 @@ node_modules
 # Ignore local SSL certificates
 localhost-key.pem
 localhost.pem
+
+# Ignore DS_Store files
+**/.DS_Store
