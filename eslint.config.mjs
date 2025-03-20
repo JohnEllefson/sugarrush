@@ -3,6 +3,7 @@ import globals from 'globals';
 import pluginJs from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
+import jestPlugin from 'eslint-plugin-jest';
 
 createRequire(import.meta.url);
 
@@ -54,6 +55,34 @@ export default [
       'no-console': [process.env.NODE_ENV === 'production' ? 'warn' : 'off'],
       // Allow unused variables starting with an underscore
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+    }
+  },
+
+  // Jest support
+  {
+    files: ['__tests__/**/*.spec.js', 'jest.setup.js'],
+    languageOptions: {
+      globals: {
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        describe: 'readonly',
+        it: 'readonly'
+      }
+    },
+    plugins: {
+      jest: jestPlugin
+    },
+    extends: ['plugin:jest/recommended'],
+    rules: {
+      'jest/no-disabled-tests': 'warn',
+      'jest/no-focused-tests': 'error',
+      'jest/no-identical-title': 'error',
+      'jest/prefer-to-have-length': 'warn',
+      'jest/valid-expect': 'error'
     }
   }
 ];

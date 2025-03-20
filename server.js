@@ -1,7 +1,7 @@
 'use strict';
 
 // Import the required modules
-require('dotenv').config(); // This must load before other modules
+require('dotenv').config(); // Load environment variables first
 const express = require('express');
 const https = require('https');
 const fs = require('fs');
@@ -10,10 +10,13 @@ const session = require('express-session');
 const cors = require('cors');
 const mongodb = require('./db/connect');
 const routes = require('./routes/index');
-const utilites = require('./utilities/index');
+const utilities = require('./utilities/index');
 
 // Initialize Passport and restore authentication state
 require('./auth/passportConfig');
+
+// Detect if running in a test environment
+const isTest = process.env.NODE_ENV === 'test';
 
 // Ensure all Mongoose schemas are registered
 require('./models/candy.model');
@@ -59,8 +62,13 @@ app.use(
   })
 );
 
-// Add CORS preflight handling
-app.options('*', cors());
+// CORS preflight handling
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(204);
+});
 
 // Middleware setup
 app.use(express.json({ strict: false }));
@@ -75,57 +83,80 @@ app.use(
   })
 );
 
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
+// Passport middleware (skip during tests)
+if (!isTest) {
+  app.use(passport.initialize());
+  app.use(passport.session());
+}
 
 // Global response headers
-app.use('/', (_req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).send();
+  }
   next();
 });
 
 // Routes
-app.use('/', utilites.handleErrors(routes));
+app.use('/', utilities.handleErrors(routes));
 
-// Global error handler
+// Health check route
+app.use('*', (_req, res) => {
+  res.status(404).json({ message: 'Not Found' });
+});
+
+// Test route to force an internal server error
+app.get('/cause-internal-error', (_req, _res, next) => {
+  next(new Error('Forced internal server error'));
+});
+
+// Error handling middleware
 app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
 });
 
-// Start HTTP server
-const httpServer = app.listen(port, async () => {
-  try {
-    await mongodb.connectMongoose();
-    console.log(`HTTP server running at http://localhost:${port}`);
-  } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
-  }
-});
-
-// Start HTTPS server (only for local development)
-let httpsServer = null;
-if (sslOptions && !isProduction) {
-  httpsServer = https.createServer(sslOptions, app);
-  httpsServer.listen(httpsPort, () => {
-    console.log(`HTTPS server running at https://localhost:${httpsPort}`);
+// Prevent Express from starting if running Jest tests
+if (!isTest) {
+  // Start HTTP server
+  const httpServer = app.listen(port, async () => {
+    try {
+      await mongodb.connectMongoose();
+      console.log(`HTTP server running at http://localhost:${port}`);
+    } catch (error) {
+      console.error('Failed to connect to MongoDB:', error);
+    }
   });
+
+  // Start HTTPS server (only for local development)
+  let httpsServer = null;
+  if (sslOptions && !isProduction) {
+    httpsServer = https.createServer(sslOptions, app);
+    httpsServer.listen(httpsPort, () => {
+      console.log(`HTTPS server running at https://localhost:${httpsPort}`);
+    });
+  }
+
+  // Graceful shutdown handlers
+  const shutdown = () => {
+    console.log('Shutting down servers...');
+    httpServer.close(() => console.log('HTTP server closed.'));
+    if (httpsServer) {
+      httpsServer.close(() => console.log('HTTPS server closed.'));
+    }
+  };
+
+  process.once('SIGUSR2', () => {
+    shutdown();
+    process.kill(process.pid, 'SIGUSR2');
+  });
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
-// Graceful shutdown handlers
-const shutdown = () => {
-  console.log('Shutting down servers...');
-  httpServer.close(() => console.log('HTTP server closed.'));
-  if (httpsServer) {
-    httpsServer.close(() => console.log('HTTPS server closed.'));
-  }
-};
-
-process.once('SIGUSR2', () => {
-  shutdown();
-  process.kill(process.pid, 'SIGUSR2');
-});
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+// Export for testing
+module.exports = app;

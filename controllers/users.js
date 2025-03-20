@@ -20,10 +20,6 @@ const getAllUsers = async (req, res) => {
 
     let users = await User.find(query);
 
-    if (!users || users.length === 0) {
-      return res.status(404).json({ message: 'No matching users found' });
-    }
-
     // Only admins can see all users. Regular users can only see themselves.
     if (req.user.role !== 'admin') {
       users = users.filter((user) => user._id.toString() === req.user.userId);
