@@ -1,4 +1,5 @@
 'use strict';
+const ObjectId = require('mongodb').ObjectId;
 
 const Store = require('../models/store.model');
 
@@ -55,14 +56,15 @@ const createStoreFilter = (req) => {
   if (req.query.zip_code) {
     query.zip_code = new RegExp(req.query.zip_code, 'i'); // Case-insensitive search
   }
-  if (req.query.phone) {
-    query.phone = new RegExp(req.query.phone_number, 'i'); // Case-insensitive search
+  if (req.query.phone_number) {
+    const cleaned_phoneNum = req.query.phone_number.replaceAll('+', '\\+');
+    query.phone_number = new RegExp(cleaned_phoneNum, 'i'); // Case-insensitive search
   }
   if (req.query.email) {
     query.email = new RegExp(req.query.email, 'i'); // Case-insensitive search
   }
   if (req.query.owner_id) {
-    query.owner_id = new RegExp(req.query.owner_id, 'i'); // Case-insensitive search
+    query.owner_id = ObjectId.createFromHexString(req.query.owner_id);
   }
   if (req.query.operating_hours) {
     query.operating_hours = new RegExp(req.query.operating_hours, 'i'); // Case-insensitive search
@@ -99,26 +101,18 @@ const createSingleStore = async (req, res) => {
 // Update a single store
 const updateSingleStore = async (req, res) => {
   try {
-    const store = await Store.findById(req.params.id);
+    const result = await Store.updateOne(
+      { _id: ObjectId.createFromHexString(req.params.id) },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
 
     // Check if store was found
-    if (!store) {
-      return res.status(404).json({ message: 'Store not found.' });
+    if (result.matchedCount === 1) {
+      return res.status(200).json({ message: 'Store updated successfully.' });
+    } else {
+      return res.status(404).json({ message: 'Store not found' });
     }
-
-    store.name = req.body.name;
-    store.street = req.body.street;
-    store.city = req.body.city;
-    store.state = req.body.state;
-    store.zip_code = req.body.zip_code;
-    store.phone_number = req.body.phone_number;
-    store.email = req.body.email;
-    store.owner_id = req.body.owner_id;
-    store.operating_hours = req.body.operating_hours;
-    store.website = req.body.website;
-
-    const updatedStore = await store.save();
-    res.status(200).json({ message: 'Store updated successfully.', updatedStore });
   } catch (error) {
     res.status(500).json({ message: 'Error updating store.', error: error.message });
   }
@@ -127,15 +121,15 @@ const updateSingleStore = async (req, res) => {
 // Delete a single store
 const deleteSingleStore = async (req, res) => {
   try {
-    const store = await Store.findById(req.params.id);
-
+    const result = await Store.deleteOne({
+      _id: ObjectId.createFromHexString(req.params.id)
+    });
     // Check if store was found
-    if (!store) {
-      return res.status(404).json({ message: 'Store not found.' });
+    if (result.deletedCount === 1) {
+      return res.status(204).json({ message: 'Store deleted successfully.' });
+    } else {
+      return res.status(404).json({ message: 'Store not found' });
     }
-
-    await store.remove();
-    res.status(200).json({ message: 'Store deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting store.', error: error.message });
   }

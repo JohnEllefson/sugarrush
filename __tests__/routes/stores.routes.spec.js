@@ -43,7 +43,7 @@ beforeAll(async () => {
     state: 'NY',
     zip_code: '12345',
     phone_number: '+1-555-555-5555',
-    email: 'test.store@email.com',
+    email: 'teststore@email.com',
     owner_id: testStoreowner._id,
     operating_hours: '9-5',
     website: 'http://teststore.com'
@@ -56,7 +56,7 @@ beforeAll(async () => {
     state: 'NY',
     zip_code: '12345',
     phone_number: '+1-555-555-5555',
-    email: 'test.store@email.com',
+    email: 'teststore@email.com',
     owner_id: testStoreowner._id,
     operating_hours: '9-5',
     website: 'http://teststore.com'
@@ -69,7 +69,7 @@ beforeAll(async () => {
     state: 'NY',
     zip_code: '12345',
     phone_number: '+1-555-555-5555',
-    email: 'test.store@email.com',
+    email: 'teststore@email.com',
     owner_id: testStoreowner._id,
     operating_hours: '9-5',
     website: 'http://teststore.com'
@@ -97,135 +97,135 @@ afterAll(async () => {
  ******************************************/
 describe('Stores API Routes', () => {
 
-  //works // Test 1: GET /stores should return all stores (using the roles admin, storeowner, driver, inentoryManager)
-  // Object.keys(allUserTokens).forEach((role, index) => {  
-  //   test('GET /stores should return all stores ' + role, async () => {
-  //     const res = await request(app)
-  //       .get('/stores')
-  //       .set('Authorization', `Bearer ${allUserTokens[role]}`);
-  //       console.log('what token role is this', allUserTokens[role]);
+  // Test 1: GET /stores should return all stores (using the roles admin, storeowner, driver, inentoryManager)
+  Object.keys(allUserTokens).forEach((role, index) => {  
+    test('GET /stores should return all stores ' + role, async () => {
+      const res = await request(app)
+        .get('/stores')
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
 
-  //     expect(res.statusCode).toBe(200);
-  //     expect(Array.isArray(res.body)).toBe(true);
-  //     expect(res.body.length).toEqual(3);
-  //   });
-  // });
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toEqual(3);
+    });
+  
 
-  // Test 2: GET /stores/:id should return a single store ( accessed by admin, storeowner, driver, inventoryManger)
-  test('GET /stores/:id should return a single store', async () => {
-    const res = await request(app)
-      .get(`/stores/${testStore2._id}`)
-      .set('Authorization', `Bearer ${authToken}`);
+    // Test 2: GET /stores/:id should return a single store ( accessed by admin, storeowner, driver, inventoryManger )
+    test('GET /stores/:id should return a single store', async () => {
+      const res = await request(app)
+        .get(`/stores/${testStore2._id}`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('email', 'test@example.com');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('email', 'teststore@email.com');
+    });
+
+    // Test 3: GET /stores?name=? should return a single store by name ( accessed by admin, storeowner, driver, inventoryManger )
+    test('GET /stores?name=? should return a single store by name', async () => {
+      const res = await request(app)
+        .get(`/stores?name=Test Store1`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('name', 'Test Store1');
+    });
+
+    // Test 4: GET /stores?street=? should return a single store by street
+    test('GET /stores?street=? should return a single store by street', async () => {
+      const res = await request(app)
+        .get(`/stores?street=123 Main St`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('street', testStore3.street);
+    });
+
+    // Test 5: GET /stores?city=? should return a single store by city
+    test('GET /stores?city=? should return a single store by city', async () => {
+      const res = await request(app)
+        .get(`/stores?city=Anytown`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('city', 'Anytown');
+    });
+
+    // Test 6: GET /stores?state=? should return a single store by state
+    test('GET /stores?state=? should return a single store by state', async () => {
+      const res = await request(app)
+        .get(`/stores?state=NY`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('state', 'NY');
+    });
+
+    // Test 7: GET /stores?zip_code=? should return a single store by zip code
+    test('GET /stores?zip_code=? should return a single store by zip code', async () => {
+      const res = await request(app)
+        .get(`/stores?zip_code=12345`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('zip_code', '12345');
+    });
+
+    // Test 8: GET /stores?phone_number=? should return a single store by phone number
+    test('GET /stores?phone_number=? should return a single store by phone number', async () => {
+      const res = await request(app)
+        .get(`/stores?phone_number=1-555-555-5555`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('phone_number', '+1-555-555-5555');
+    });
+
+    // Test 9: GET /stores?email=? should return a single store by email
+    test('GET /stores?email=? should return a single store by email', async () => {
+      const res = await request(app)
+        .get(`/stores?email=teststore@email.com`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('email', 'teststore@email.com');
+    });
+
+    // Test 10: GET /stores?owner_id=? should return a single store by owner_id
+    test('GET /stores?owner_id=? should return a single store by owner_id', async () => {
+      const res = await request(app)
+        .get(`/stores?owner_id=${testStoreowner._id}`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('owner_id', testStoreowner._id.toString());
+    });
+
+    // Test 11: GET /stores?operating_hours=? should return a single store by operating_hours
+    test('GET /stores?operating_hours=? should return a single store by operating_hours', async () => {
+      const res = await request(app)
+        .get(`/stores?operating_hours=9-5`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('operating_hours', '9-5');
+    });
+
+    // Test 12: GET /stores?website=? should return a single store by website
+    test('GET /stores?website=? should return a single store by website', async () => {
+      const res = await request(app)
+        .get(`/stores?website=http://teststore.com`)
+        .set('Authorization', `Bearer ${allUserTokens[role]}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body[0]).toHaveProperty('website', 'http://teststore.com');
+    });
   });
 
-  // Test 3: GET /stores?name=? should return a single store by name
-  test('GET /stores?name=? should return a single store by name', async () => {
-    const res = await request(app)
-      .get(`/stores?name=Test Store1`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('name', 'Test Store1');
-  });
-
-  // Test 4: GET /stores?street=? should return a single store by street
-  test('GET /stores?street=? should return a single store by street', async () => {
-    const res = await request(app)
-      .get(`/stores?street=123 Main St`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('street', '123 Main St');
-  });
-
-  // Test 5: GET /stores?city=? should return a single store by city
-  test('GET /stores?city=? should return a single store by city', async () => {
-    const res = await request(app)
-      .get(`/stores?city=Anytown`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('city', 'Anytown');
-  });
-
-  // Test 6: GET /stores?state=? should return a single store by state
-  test('GET /stores?state=? should return a single store by state', async () => {
-    const res = await request(app)
-      .get(`/stores?state=NY`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('state', 'NY');
-  });
-
-  // Test 7: GET /stores?zip_code=? should return a single store by zip code
-  test('GET /stores?zip_code=? should return a single store by zip code', async () => {
-    const res = await request(app)
-      .get(`/stores?zip_code=12345`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('zip_code', '12345');
-  });
-
-  // Test 8: GET /stores?phone_number=? should return a single store by phone number
-  test('GET /stores?phone_number=? should return a single store by phone number', async () => {
-    const res = await request(app)
-      .get(`/stores?phone_number=+1-555-555-5555`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('phone_number', '+1-555-555-5555');
-  });
-
-  // Test 9: GET /stores?email=? should return a single store by email
-  test('GET /stores?email=? should return a single store by email', async () => {
-    const res = await request(app)
-      .get(`/stores?email=john.mcnellie@email.com`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('email', 'john.mcnellie@email.com');
-  });
-
-  // Test 10: GET /stores?owner_id=? should return a single store by owner_id
-  test('GET /stores?owner_id=? should return a single store by owner_id', async () => {
-    const res = await request(app)
-      .get(`/stores?owner_id=${testStoreowner._id}`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('owner_id', testStoreowner._id);
-  });
-
-  // Test 11: GET /stores?operating_hours=? should return a single store by operating_hours
-  test('GET /stores?operating_hours=? should return a single store by operating_hours', async () => {
-    const res = await request(app)
-      .get(`/stores?operating_hours=9-5`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('operating_hours', '9-5');
-  });
-
-  // Test 12: GET /stores?website=? should return a single store by website
-  test('GET /stores?website=? should return a single store by website', async () => {
-    const res = await request(app)
-      .get(`/stores?website=http://teststore.com`)
-      .set('Authorization', `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('website', 'http://teststore.com');
-  });
-
-  // Test 13: POST /stores should allow admin, storeowner, driver, inventoryManager to create a store
+  // Test 13: POST /stores should allow admin, storeowner, inventoryManager to create a store
   test('POST /stores should allow admin, storeowner, driver, inventoryManager to create a store', async () => {
     const res = await request(app)
       .post('/stores')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Test Store4',
         street: '123 Main St',
@@ -244,81 +244,67 @@ describe('Stores API Routes', () => {
     expect(res.body.newStore).toHaveProperty('name', 'Test Store4');
   });
 
-  // Test 14: PUT /stores/:id should allow admin, storeowner, driver, inventoryManager to update a store
+  // Test 14: POST /stores shouldn't allow driver to create a store
+  test('POST /stores should allow admin, storeowner, driver, inventoryManager to create a store', async () => {
+    const res = await request(app)
+      .post('/stores')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({
+        name: 'Test Store4',
+        street: '123 Main St',
+        city: 'Anytown',
+        state: 'NY',
+        zip_code: '12345',
+        phone_number: '+1-555-555-5555',
+        email: 'david.goliath@email.com',
+        owner_id: testStoreowner._id,
+        operating_hours: '9-5',
+        website: 'http://teststore4.com'
+      });
+
+    expect(res.statusCode).toBe(403);
+  });
+
+
+  // Test 15: PUT /stores/:id should allow admin, storeowner, inventoryManager to update a store
   test('PUT /stores/:id should allow admin, storeowner, driver, inventoryManager to update a store', async () => {
     const res = await request(app)
-      .put(`/stores/${testStore1._id}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .put(`/stores/${testStore1._id.toString()}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Updated Store 1' });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Store was successfully updated.');
-    expect(res.body.updatedStore).toHaveProperty('name', 'Updated Store 1');
-  }
-
-
-
-
-  // Test 15: DELETE /stores/:id should allow admin, storeowner, driver, inventoryManager to delete a store
-  
-  
-  
-  test('PUT /stores/:id should allow user to update their own profile', async () => {
-    const res = await request(app)
-      .put(`/users/${testUser._id}`)
-      .set('Authorization', `Bearer ${authToken}`)
-      .send({ preferred_name: 'Updated Name' });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.user.preferred_name).toBe('Updated Name');
+    expect(res.body).toHaveProperty('message', 'Store updated successfully.');
   });
 
-  // Test 4: DELETE /users/:id should allow admin to delete a user
-  test('DELETE /users/:id should allow admin to delete a user', async () => {
+  // Test 16: PUT /stores/:id shouldn't allow driver to update a store
+  test('PUT /stores/:id should allow admin, storeowner, driver, inventoryManager to update a store', async () => {
     const res = await request(app)
-      .delete(`/users/${testUser._id}`)
-      .set('Authorization', `Bearer ${authToken}`);
+      .put(`/stores/${testStore1._id.toString()}`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send({ name: 'Updated Store 1' });
 
-    expect(res.statusCode).toBe(200);
-    const deletedUser = await User.findById(testUser._id);
-    expect(deletedUser).toBeNull();
-  });
-
-  // Test 5: Unauthorized access to GET /users should return 403
-  test('GET /users should return 403 for unauthorized users', async () => {
-    const res = await request(app)
-    .get('/users')
-    .set('Authorization', 'Bearer invalidtoken');
-  
     expect(res.statusCode).toBe(403);
-    expect(res.body).toEqual({ message: 'Invalid token. Access denied.' });
   });
 
-  // Test 6: Unauthorized access to GET /users/:id should return 401
-  test('GET /users/:id should return 401 for unauthorized users', async () => {
+  // Test 17: DELETE /stores/:id should allow admin, storeowner, inventoryManager to delete a store
+  test('DELETE /stores/:id should allow admin, storeowner', async () => {
     const res = await request(app)
-      .get(`/users/${testUser._id}`)
+      .delete(`/stores/${testStore1._id.toString()}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send();
 
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ message: 'Authorization header missing. Access denied.' });
-  });
-
-  // Test 7: Unauthorized PUT /users/:id should return 401
-  test('PUT /users/:id should return 401 for unauthorized users', async () => {
+      expect(res.statusCode).toBe(204);
+  })
+  
+  // Test 18: DELETE /stores/:id shouldn't allow driver to delete a store
+  test('DELETE /stores/:id should allow admin, storeowner', async () => {
     const res = await request(app)
-      .put(`/users/${testUser._id}`)
-      .send({ preferred_name: 'Not In Database' });
+      .delete(`/stores/${testStore1._id.toString()}`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .send();
 
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ message: 'Authorization header missing. Access denied.' });
-  });
-
-  // Test 8: Unauthorized DELETE /users/:id should return 401
-  test('DELETE /users/:id should return 401 for unauthorized users', async () => {
-    const res = await request(app)
-      .delete(`/users/${testUser._id}`)
-
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ message: 'Authorization header missing. Access denied.' });
-  });
+    expect(res.statusCode).toBe(403);
+  })
+  
 });

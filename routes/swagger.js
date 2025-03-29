@@ -8,7 +8,6 @@ const swaggerDocument = require('../swagger-output.json');
 // Determine the base URL dynamically based on environment
 const BASE_URL =
   process.env.NODE_ENV === 'production' ? process.env.REMOTE_BASE_URL : process.env.LOCAL_BASE_URL;
-console.log('its all about that base', BASE_URL);
 
 // Update Swagger OAuth2 security schema with the correct URLs
 swaggerDocument.components.securitySchemes.OAuth2.flows.authorizationCode.authorizationUrl = `${BASE_URL}/auth/google`;
