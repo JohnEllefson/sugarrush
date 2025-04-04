@@ -130,9 +130,9 @@ afterAll(async () => {
       jest.clearAllMocks();
     });
   
-   /******************************************
+   /*******************************************
     *** Begin Tests: getAllStores           ***
-    ******************************************/
+    *******************************************/
     // Test 1: Ensure all stores are returned when requested
     test('getAllStores should return stores', async () => {
       const req = httpMocks.createRequest({
@@ -344,6 +344,9 @@ afterAll(async () => {
       expect(data[0]).toHaveProperty('name', 'Test Store 1'); 
     })
 
+   /*******************************************
+    *** Begin Tests: getSingleStore         ***
+    *******************************************/
     // Test 12: Ensure a single store is returned by ID
     test('getSingleStore should return a single store by ID', async () => {
       const req = httpMocks.createRequest({
@@ -360,6 +363,9 @@ afterAll(async () => {
       expect(data).toHaveProperty('name', testStore1.name);
     });
 
+   /*******************************************
+    *** Begin Tests: createSingleStore      ***
+    *******************************************/
     // Test 13: Ensure a single store is created
     test('createSingleStore should create a single store', async () => {
       const req = httpMocks.createRequest({
@@ -385,6 +391,9 @@ afterAll(async () => {
         expect(data.newStore).toHaveProperty('name', 'Test Store 6');
       });
 
+   /*******************************************
+    *** Begin Tests: updateSingleStore      ***
+    *******************************************/
     // Test 14: Ensure a single store is updated
     test('updateSingleStore should update a single store', async () => {
       const req = httpMocks.createRequest({
@@ -417,6 +426,9 @@ afterAll(async () => {
       expect(data2).toHaveProperty('name', 'Updated Store 1');
     });
 
+   /*******************************************
+    *** Begin Tests: deleteSingleStore      ***
+    *******************************************/
     // Test 15: Ensure a single store is deleted
     test('Single store is deleted by id', async () => {
       const req = httpMocks.createRequest({
