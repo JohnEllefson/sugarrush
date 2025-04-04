@@ -10,112 +10,127 @@ const getAllOrders = async (req, res) => {
 
     // Apply optional filters
     if (req.query.status) {
-      query.status = req.query.status;
+      query.delivery_status = req.query.status;
     }
-    if (req.query.customer) {
-      query.customerName = new RegExp(req.query.customer, 'i'); // Case-insensitive search
+    if (req.query.driver) {
+      // Convert driver (deliverer_id) to ObjectId
+      if (mongoose.Types.ObjectId.isValid(req.query.driver)) {
+        query.deliverer_id = new mongoose.Types.ObjectId(req.query.driver);
+      } else {
+        return res.status(400).json({ message: 'Invalid driver ID format' });
+      }
+    }
+    if (req.query.candy) {
+      // Convert candy_ordered.candy_id to ObjectId
+      if (mongoose.Types.ObjectId.isValid(req.query.candy)) {
+        query['candy_ordered.candy_id'] = new mongoose.Types.ObjectId(req.query.candy);
+      } else {
+        return res.status(400).json({ message: 'Invalid candy ID format' });
+      }
     }
 
-    let orders = await Order.find(query);
+    const orders = await Order.find(query);
 
-    // Restrict access: Only admins see all orders; others see only their orders
-    if (req.user.role !== 'admin') {
-      orders = orders.filter((order) => order.customerId.toString() === req.user.userId);
-    }
-
-    // If no orders are found after filtering, return 404
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: 'No matching orders found' });
     }
 
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(orders);
-  } catch (err) {
-    res.status(500).json({ message: 'Error retrieving orders', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to retrieve orders', error: error.message });
   }
 };
 
 // Retrieve a single order by ID
 const getSingleOrder = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    if (!req.params.id) {
+      return res.status(400).json({ message: 'ID parameter is required' });
+    }
 
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Restrict access: Only allow the owner or an admin to view the order
-    if (req.user.role !== 'admin' && order.customerId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(order);
-  } catch (err) {
-    res.status(500).json({ message: 'Error retrieving order', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to retrieve order', error: error.message });
   }
 };
 
 // Create a new order
 const createSingleOrder = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = new Order({
+      store_id: req.body.store_id,
+      deliverer_id: req.body.deliverer_id,
+      candy_ordered: req.body.candy_ordered,
+      total_price: req.body.total_price,
+      date_created: req.body.date_created || new Date(),
+      last_updated: new Date(),
+      delivery_status: req.body.delivery_status,
+      delivery_address: req.body.delivery_address,
+      delivery_contact: req.body.delivery_contact,
+      delivery_phone_number: req.body.delivery_phone_number
+    });
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(400).json({ message: 'Order object is empty' });
     }
 
-    // Restrict access: Only allow the owner or an admin to view the order
-    if (req.user.role !== 'admin' && order.customerId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
+    await order.save();
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(order);
-  } catch (err) {
-    res.status(500).json({ message: 'Error retrieving order', error: err.message });
+    res.status(201).json({ message: 'New order added', id: order._id });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to create order', error: error.message });
   }
 };
 
 // Update a single order
 const updateSingleOrder = async (req, res) => {
   try {
-    const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!req.params.id) {
+      return res.status(400).json({ message: 'ID parameter is required' });
+    }
+
+    // Ensure last_updated field is always updated
+    req.body.last_updated = new Date();
+
+    const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
 
     if (!updatedOrder) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Restrict access: Only allow the owner or an admin to update the order
-    if (req.user.role !== 'admin' && updatedOrder.customerId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(updatedOrder);
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating order', error: err.message });
+    res.status(200).json({ message: 'Order updated successfully', order: updatedOrder });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update order', error: error.message });
   }
 };
 
 // Delete a single order
 const deleteSingleOrder = async (req, res) => {
   try {
-    const deletedOrder = await Order.findByIdAndDelete(req.params.id);
-
-    if (!deletedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
+    if (!req.params.id) {
+      return res.status(400).json({ message: 'ID parameter is required' });
     }
 
-    // Restrict access: Only allow the owner or an admin to delete the order
-    if (req.user.role !== 'admin' && deletedOrder.customerId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'Access denied' });
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
     }
 
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json({ message: 'Order deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error deleting order', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete order', error: error.message });
   }
 };
 
