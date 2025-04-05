@@ -23,45 +23,41 @@ candyController.getAllCandy = async (req, res) => {
     const result = await candyModel.find(query);
 
     if (result.length === 0) {
-      return res.status(404).json({ error: "No matching candy items found" });
+      return res.status(404).json({ message: "No matching candy items found" });
     }
 
-    const filteredResult = result.map((doc) => {
-      const candy = doc.toObject();
-      const { createdBy, ...showCandy } = candy;
-      return showCandy;
-    });
-
     res.setHeader("Content-Type", "application/json");
-    res.status(200).json(filteredResult);
-  } catch (error) {
-    console.error("Error fetching all candy:", error);
-    res.status(500).json({ error: "Failed to retrieve candy items" });
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error fetching all candy:", err);
+    res.status(500).json({
+      message: "Failed to retrieve candy items",
+      error: err.message || "Unknown error",
+    });
   }
 };
 
 // Retrieve a single candy item by ID
 candyController.getSingleCandy = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "ID parameter is required" });
+    if (!req.params.id) {
+      return res.status(400).json({ message: "ID parameter is required" });
     }
 
-    const result = await candyModel.findOne({ _id: new ObjectId(id) });
+    const result = await candyModel.findById(req.params.id);
+
     if (!result) {
-      return res.status(404).json({ message: "No matching candy items found" });
+      return res.status(404).json({ message: "Candy item not found" });
     }
-
-    const filteredResult = result
-      ? { ...result.toObject(), createdBy: undefined }
-      : null;
 
     res.setHeader("Content-Type", "application/json");
-    res.status(200).json(filteredResult);
-  } catch (error) {
-    console.error("Error fetching candy by ID:", error);
-    res.status(500).json({ error: "No matching candy items found" });
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error fetching candy by ID:", err);
+    res.status(500).json({
+      message: "Failed to retrieve candy item",
+      error: err.message || "Unknown error",
+    });
   }
 };
 
@@ -78,32 +74,33 @@ candyController.createSingleCandy = async (req, res) => {
       date_added: new Date().toLocaleDateString("en-CA"),
     };
 
-    const result = await candyModel.create(candyInfo);
+    const newCandy = new candyModel(candyInfo);
+
+    const result = await newCandy.save();
+
+    if (!result) {
+      throw new Error("Candy creation failed");
+    }
 
     res.status(201).json({
-      _id: result._id,
-      ...candyInfo,
-      message: "New candy created successfully.",
+      id: result._id,
+      message: "New candy item added",
     });
     console.log({ result, message: "New candy created successfully." });
-  } catch (error) {
-    console.error("Error making new candy:", error);
-    res.status(500).json({ error: "Failed to create candy item" });
+  } catch (err) {
+    console.error("Error making new candy:", err);
+    res.status(500).json({
+      message: "Failed to create candy item",
+      error: err.message || "Unknown error",
+    });
   }
 };
 
 // Update a single candy item
 candyController.updateSingleCandy = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "ID parameter is required" });
-    }
-
-    const candy = await candyModel.findOne({ _id: new ObjectId(id) });
-
-    if (!candy) {
-      return res.status(404).json({ error: "No matching candy items found" });
+    if (!req.params.id) {
+      return res.status(400).json({ message: "ID parameter is required" });
     }
 
     const candyInfo = {
@@ -115,45 +112,66 @@ candyController.updateSingleCandy = async (req, res) => {
       supplier_name: req.body.supplier_name,
       date_added: req.body.date_added,
     };
-    const result = await candyModel.replaceOne(
-      { _id: new ObjectId(id) },
-      candyInfo
+
+    const result = await candyModel.findByIdAndUpdate(
+      req.params.id,
+      candyInfo,
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
-    if (result.modifiedCount > 0) {
-      res.status(204).send();
-      console.log({ upsertedId: id, message: "Updated candy information." });
+    if (!result) {
+      return res.status(404).json({ message: "Candy item not found" });
     }
-  } catch (error) {
-    console.error("Error updating candy:", error);
-    res.status(500).json({ error: "Failed to update candy." });
+
+    res.status(200).json({
+      message: "Candy item updated successfully",
+      candy: result,
+    });
+    console.log({
+      updatedCandy: result,
+      message: "Updated candy information.",
+    });
+  } catch (err) {
+    console.error("Error updating candy:", err);
+    res.status(500).json({
+      message: "Failed to update candy item",
+      error: err.message || "Unknown error",
+    });
   }
 };
 
 // Delete a single candy item
 candyController.deleteSingleCandy = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "ID parameter is required" });
-    }
-    const candy = await candyModel.findOne({ _id: new ObjectId(id) });
-
-    if (!candy) {
-      return res.status(404).json({ error: "No matching candy items found" });
+    if (!req.params.id) {
+      return res.status(400).json({ message: "ID parameter is required" });
     }
 
-    const result = await candyModel.deleteOne({ _id: new ObjectId(id) });
+    const result = await candyModel.findByIdAndDelete(req.params.id);
 
-    if (result.deletedCount > 0) {
-      res
-        .status(200)
-        .json({ ...result, deletedId: id, message: "Candy removed." });
-      console.log({ result, deletedId: id, message: "Candy removed." });
+    if (!result) {
+      return res.status(404).json({ message: "Candy item not found" });
     }
-  } catch (error) {
-    console.error("Error deleting candy:", error);
-    res.status(500).json({ error: "Failed to delete candy." });
+
+    if (result) {
+      res.status(200).json({
+        message: "Candy item deleted successfully",
+      });
+      console.log({
+        result,
+        deletedId: result._id,
+        message: "Candy item deleted successfully",
+      });
+    }
+  } catch (err) {
+    console.error("Error deleting candy:", err);
+    res.status(500).json({
+      message: "Failed to delete candy item",
+      error: err.message || "Unknown error",
+    });
   }
 };
 
