@@ -2,8 +2,6 @@
 
 const candyModel = require("../models/candy.model");
 const candyController = {};
-const mongoose = require("mongoose");
-const { ObjectId } = mongoose.Types;
 
 // Retrieve all candy items with optional filtering
 candyController.getAllCandy = async (req, res) => {
