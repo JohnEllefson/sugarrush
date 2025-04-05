@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
-const { body, param, validationResult } = require('express-validator');
+const { body, param, validationResult } = require("express-validator");
 const candyValidate = {};
 
 /*************************************
  *  MongoId validation rules
  *************************************/
 candyValidate.idRules = () => {
-  return [param('id').isMongoId().withMessage('Invalid ID')];
+  return [param("id").isMongoId().withMessage("Invalid ID")];
 };
 
 /*************************************
@@ -26,43 +26,53 @@ candyValidate.checkId = (req, res, next) => {
  *************************************/
 candyValidate.candyAddRules = () => {
   return [
-    body('name').trim().escape().notEmpty().withMessage('Candy name is required'),
+    body("name")
+      .trim()
+      .escape()
+      .notEmpty()
+      .withMessage("Candy name is required"),
 
-    body('description').trim().escape().notEmpty().withMessage('Description is required'),
+    body("description")
+      .trim()
+      .escape()
+      .notEmpty()
+      .withMessage("Description is required"),
 
-    body('shipping_container')
+    body("shipping_container")
       .optional()
       .trim()
       .escape()
-      .isIn(['pallet', 'crate', 'cardboardBox', 'displayBox'])
-      .withMessage('Shipping container must be one of: pallet, crate, cardboardBox, or displayBox'),
+      .isIn(["pallet", "crate", "cardboardBox", "displayBox"])
+      .withMessage(
+        "Shipping container must be one of: pallet, crate, cardboardBox, or displayBox"
+      ),
 
-    body('price_per_unit')
+    body("price_per_unit")
       .notEmpty()
-      .withMessage('Price per unit is required')
+      .withMessage("Price per unit is required")
       .isFloat({ min: 0.01 })
-      .withMessage('Price per unit must be a positive number'),
+      .withMessage("Price per unit must be a positive number"),
 
-    body('stock_quantity')
+    body("stock_quantity")
       .notEmpty()
-      .withMessage('Stock quantity is required')
+      .withMessage("Stock quantity is required")
       .isInt({ min: 0 })
-      .withMessage('Stock quantity must be a non-negative integer'),
+      .withMessage("Stock quantity must be a non-negative integer"),
 
-    body('supplier_name')
+    body("supplier_name")
       .trim()
       .escape()
       .notEmpty()
-      .withMessage('Supplier name is required')
+      .withMessage("Supplier name is required")
       .isLength({ min: 2 })
-      .withMessage('Supplier name must be at least 2 characters long'),
+      .withMessage("Supplier name must be at least 2 characters long"),
 
-    body('date_added')
+    body("date_added")
       .notEmpty()
-      .withMessage('Date added is required')
+      .withMessage("Date added is required")
       .isISO8601()
       .toDate()
-      .withMessage('Date must be in ISO8601 format (YYYY-MM-DD)')
+      .withMessage("Date must be in ISO8601 format (YYYY-MM-DD)"),
   ];
 };
 
@@ -71,46 +81,53 @@ candyValidate.candyAddRules = () => {
  *************************************/
 candyValidate.candyUpdateRules = () => {
   return [
-    body('name').optional().trim().escape().notEmpty().withMessage('Candy name cannot be empty'),
-
-    body('description')
+    body("name")
       .optional()
       .trim()
       .escape()
       .notEmpty()
-      .withMessage('Description cannot be empty'),
+      .withMessage("Candy name cannot be empty"),
 
-    body('shipping_container')
+    body("description")
       .optional()
       .trim()
       .escape()
-      .isIn(['pallet', 'crate', 'cardboardBox', 'displayBox'])
-      .withMessage('Shipping container must be one of: pallet, crate, cardboardBox, or displayBox'),
+      .notEmpty()
+      .withMessage("Description cannot be empty"),
 
-    body('price_per_unit')
+    body("shipping_container")
+      .optional()
+      .trim()
+      .escape()
+      .isIn(["pallet", "crate", "cardboardBox", "displayBox"])
+      .withMessage(
+        "Shipping container must be one of: pallet, crate, cardboardBox, or displayBox"
+      ),
+
+    body("price_per_unit")
       .optional()
       .isFloat({ min: 0.01 })
-      .withMessage('Price per unit must be a positive number'),
+      .withMessage("Price per unit must be a positive number"),
 
-    body('stock_quantity')
+    body("stock_quantity")
       .optional()
       .isInt({ min: 0 })
-      .withMessage('Stock quantity must be a non-negative integer'),
+      .withMessage("Stock quantity must be a non-negative integer"),
 
-    body('supplier_name')
+    body("supplier_name")
       .optional()
       .trim()
       .escape()
       .notEmpty()
-      .withMessage('Supplier name cannot be empty')
+      .withMessage("Supplier name cannot be empty")
       .isLength({ min: 2 })
-      .withMessage('Supplier name must be at least 2 characters long'),
+      .withMessage("Supplier name must be at least 2 characters long"),
 
-    body('date_added')
+    body("date_added")
       .optional()
       .isISO8601()
       .toDate()
-      .withMessage('Date must be in ISO8601 format (YYYY-MM-DD)')
+      .withMessage("Date must be in ISO8601 format (YYYY-MM-DD)"),
   ];
 };
 

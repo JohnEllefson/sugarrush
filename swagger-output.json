@@ -58,13 +58,22 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string", "example": "Authentication successful" },
-                    "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+                    "message": {
+                      "type": "string",
+                      "example": "Authentication successful"
+                    },
+                    "token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    },
                     "user": {
                       "type": "object",
                       "properties": {
                         "username": { "type": "string", "example": "john_doe" },
-                        "email": { "type": "string", "example": "john@example.com" },
+                        "email": {
+                          "type": "string",
+                          "example": "john@example.com"
+                        },
                         "role": { "type": "string", "example": "user" }
                       }
                     }
@@ -78,13 +87,20 @@
             "headers": {
               "Location": {
                 "description": "URL where the user is redirected after successful login",
-                "schema": { "type": "string", "example": "https://yourfrontend.com/dashboard" }
+                "schema": {
+                  "type": "string",
+                  "example": "https://yourfrontend.com/dashboard"
+                }
               }
             }
           },
           "400": { "description": "Authentication failed" },
-          "401": { "description": "Unauthorized - Invalid credentials or token expired" },
-          "500": { "description": "Internal server error during authentication" }
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token expired"
+          },
+          "500": {
+            "description": "Internal server error during authentication"
+          }
         },
         "x-internal": true
       }
@@ -118,7 +134,13 @@
             "description": "Filter users by role (admin, storeowner, driver, inventoryManager, temporary)",
             "schema": {
               "type": "string",
-              "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+              "enum": [
+                "admin",
+                "storeowner",
+                "driver",
+                "inventoryManager",
+                "temporary"
+              ]
             },
             "example": "temporary"
           },
@@ -215,14 +237,20 @@
                 "type": "object",
                 "properties": {
                   "preferred_name": { "type": "string" },
-                  "phone_number": { 
-                    "type": "string", 
+                  "phone_number": {
+                    "type": "string",
                     "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
                     "example": "+1-690-445-2710"
                   },
-                  "role": { 
-                    "type": "string", 
-                    "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "storeowner",
+                      "driver",
+                      "inventoryManager",
+                      "temporary"
+                    ]
                   }
                 }
               }
@@ -237,7 +265,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string", "example": "User updated successfully" },
+                    "message": {
+                      "type": "string",
+                      "example": "User updated successfully"
+                    },
                     "user": {
                       "$ref": "#/components/schemas/User"
                     }
@@ -248,7 +279,9 @@
           },
           "400": { "description": "Invalid input data" },
           "401": { "description": "Unauthorized access" },
-          "403": { "description": "Forbidden - Not allowed to modify this user" },
+          "403": {
+            "description": "Forbidden - Not allowed to modify this user"
+          },
           "404": { "description": "User not found" }
         }
       },
@@ -293,7 +326,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "snickers"
+            "example": "Sour Patch Kids"
           },
           {
             "name": "description",
@@ -302,7 +335,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "chocolate"
+            "example": "Sour"
           },
           {
             "name": "container",
@@ -312,7 +345,7 @@
               "type": "string",
               "enum": ["pallet", "crate", "cardboardBox", "displayBox"]
             },
-            "example": "displayBox"
+            "example": "cardboardBox"
           }
         ],
         "responses": {
@@ -461,8 +494,8 @@
             "in": "query",
             "description": "Filter stores by owner_id",
             "schema": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
             },
             "example": "676fc7533d1439022be2c2d8"
           }
@@ -614,8 +647,8 @@
             "in": "query",
             "description": "Filter orders by deliverer_id",
             "schema": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
             },
             "example": "679fc7533d1717094be2c5e6"
           },
@@ -624,8 +657,8 @@
             "in": "query",
             "description": "Filter orders containing a specific candy_id",
             "schema": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
             },
             "example": "679ff3933d1717094be2c645"
           }
@@ -789,18 +822,24 @@
           "username": { "type": "string" },
           "email": { "type": "string", "format": "email" },
           "preferred_name": { "type": "string" },
-          "phone_number": { 
-            "type": "string", 
+          "phone_number": {
+            "type": "string",
             "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
             "example": "+1-690-445-2710"
           },
-          "role": { 
-            "type": "string", 
-            "enum": ["admin", "storeowner", "driver", "inventoryManager", "temporary"]
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "storeowner",
+              "driver",
+              "inventoryManager",
+              "temporary"
+            ]
           },
-          "date_created": { 
-            "type": "string", 
-            "format": "date-time", 
+          "date_created": {
+            "type": "string",
+            "format": "date-time",
             "example": "2023-08-01T12:00:00Z"
           }
         }
@@ -809,43 +848,43 @@
         "type": "object",
         "properties": {
           "_id": { "type": "string", "description": "MongoDB ObjectId" },
-          "name": { 
-            "type": "string", 
+          "name": {
+            "type": "string",
             "description": "Name of the candy",
             "example": "Snickers"
           },
-          "description": { 
-            "type": "string", 
+          "description": {
+            "type": "string",
             "description": "Brief description of the candy",
             "example": "Milk chocolate, peanuts, caramel, and nougat."
           },
-          "shipping_container": { 
-            "type": "string", 
+          "shipping_container": {
+            "type": "string",
             "enum": ["pallet", "crate", "cardboardBox", "displayBox"],
             "description": "The type of shipping container used for packaging",
             "example": "pallet"
           },
-          "price_per_unit": { 
-            "type": "number", 
-            "format": "float", 
+          "price_per_unit": {
+            "type": "number",
+            "format": "float",
             "minimum": 0.01,
             "description": "Price per individual unit of the candy",
             "example": 1.5
           },
-          "stock_quantity": { 
-            "type": "integer", 
-            "minimum": 0, 
+          "stock_quantity": {
+            "type": "integer",
+            "minimum": 0,
             "description": "Number of candy units available in stock",
             "example": 1000
           },
-          "supplier_name": { 
-            "type": "string", 
+          "supplier_name": {
+            "type": "string",
             "description": "Name of the supplier or manufacturer",
             "example": "Mars, Inc."
           },
-          "date_added": { 
-            "type": "string", 
-            "format": "date", 
+          "date_added": {
+            "type": "string",
+            "format": "date",
             "description": "Date when the candy was added to inventory",
             "example": "2023-01-01"
           }
@@ -854,60 +893,60 @@
       "Store": {
         "type": "object",
         "properties": {
-          "_id": { 
-            "type": "string", 
-            "description": "MongoDB ObjectId of the store" 
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId of the store"
           },
-          "name": { 
-            "type": "string", 
+          "name": {
+            "type": "string",
             "description": "The name of the store",
             "example": "Candy Corner"
           },
-          "street": { 
-            "type": "string", 
+          "street": {
+            "type": "string",
             "description": "Street address of the store",
             "example": "123 Sweet St"
           },
-          "city": { 
-            "type": "string", 
+          "city": {
+            "type": "string",
             "description": "City where the store is located",
             "example": "Los Angeles"
           },
-          "state": { 
-            "type": "string", 
+          "state": {
+            "type": "string",
             "description": "State where the store is located (2-letter abbreviation)",
             "example": "CA"
           },
-          "zip_code": { 
-            "type": "string", 
+          "zip_code": {
+            "type": "string",
             "description": "ZIP code of the store location",
             "pattern": "^\\d{5}(-\\d{4})?$",
             "example": "90001"
           },
-          "phone_number": { 
-            "type": "string", 
+          "phone_number": {
+            "type": "string",
             "description": "Contact phone number of the store",
             "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
             "example": "+1-323-555-1234"
           },
-          "email": { 
-            "type": "string", 
+          "email": {
+            "type": "string",
             "format": "email",
             "description": "Store's contact email address",
             "example": "info@candycorner.com"
           },
-          "owner_id": { 
-            "type": "string", 
+          "owner_id": {
+            "type": "string",
             "description": "MongoDB ObjectId referencing the store owner",
             "example": "67cb9b89b39c3bf08c3d592b"
           },
-          "operating_hours": { 
-            "type": "string", 
+          "operating_hours": {
+            "type": "string",
             "description": "Operating hours of the store",
             "example": "10:00 AM - 6:00 PM"
           },
-          "website": { 
-            "type": "string", 
+          "website": {
+            "type": "string",
             "format": "uri",
             "description": "Store's website URL",
             "example": "http://www.candycorner.com"
@@ -917,33 +956,33 @@
       "Order": {
         "type": "object",
         "properties": {
-          "_id": { 
-            "type": "string", 
-            "description": "MongoDB ObjectId of the order" 
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId of the order"
           },
-          "store_id": { 
-            "type": "string", 
+          "store_id": {
+            "type": "string",
             "description": "MongoDB ObjectId referencing the store that placed the order",
             "example": "67cb80cab39c3bf08c3d590b"
           },
-          "deliverer_id": { 
-            "type": "string", 
+          "deliverer_id": {
+            "type": "string",
             "description": "MongoDB ObjectId referencing the user (driver) delivering the order",
             "example": "67cb9b89b39c3bf08c3d592c"
           },
-          "candy_ordered": { 
-            "type": "array", 
+          "candy_ordered": {
+            "type": "array",
             "description": "List of candy items ordered and their quantities",
             "items": {
               "type": "object",
               "properties": {
-                "candy_id": { 
-                  "type": "string", 
+                "candy_id": {
+                  "type": "string",
                   "description": "MongoDB ObjectId referencing a candy item",
                   "example": "67cb801eb39c3bf08c3d58dc"
                 },
-                "quantity": { 
-                  "type": "integer", 
+                "quantity": {
+                  "type": "integer",
                   "minimum": 1,
                   "description": "Quantity of the candy item ordered",
                   "example": 30
@@ -951,43 +990,43 @@
               }
             }
           },
-          "total_price": { 
-            "type": "number", 
-            "format": "float", 
+          "total_price": {
+            "type": "number",
+            "format": "float",
             "minimum": 0.01,
             "description": "Total price of the order",
             "example": 64.8
           },
-          "date_created": { 
-            "type": "string", 
-            "format": "date-time", 
+          "date_created": {
+            "type": "string",
+            "format": "date-time",
             "description": "Timestamp when the order was created",
             "example": "2024-03-01T12:00:00Z"
           },
-          "last_updated": { 
-            "type": "string", 
-            "format": "date-time", 
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
             "description": "Timestamp when the order was last updated",
             "example": "2024-03-02T08:15:30Z"
           },
-          "delivery_status": { 
-            "type": "string", 
+          "delivery_status": {
+            "type": "string",
             "enum": ["pending", "shipped", "delivered"],
             "description": "Current status of the order delivery",
             "example": "pending"
           },
-          "delivery_address": { 
-            "type": "string", 
+          "delivery_address": {
+            "type": "string",
             "description": "Address where the order will be delivered",
             "example": "123 Sweet St, Los Angeles, CA 90001"
           },
-          "delivery_contact": { 
-            "type": "string", 
+          "delivery_contact": {
+            "type": "string",
             "description": "Name of the contact person for the delivery",
             "example": "Maria Lopez"
           },
-          "delivery_phone_number": { 
-            "type": "string", 
+          "delivery_phone_number": {
+            "type": "string",
             "pattern": "^\\+1-\\d{3}-\\d{3}-\\d{4}$",
             "description": "Phone number of the delivery contact",
             "example": "+1-323-555-1234"
