@@ -490,7 +490,7 @@
             "example": "walgreens"
           },
           {
-            "name": "owner",
+            "name": "owner_id",
             "in": "query",
             "description": "Filter stores by owner_id",
             "schema": {
